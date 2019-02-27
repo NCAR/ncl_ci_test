@@ -23,10 +23,21 @@ for dir in */; do
     for s in *.ncl; do
         png=${s%%.ncl}.png
 
-        ncl -Q $s >/dev/null
-        ncl_ret=$?
+        if [ -x "$(command -v "timeout")" ]; then
+            timeout 1m ncl -Q $s >/dev/null
+            ncl_ret=$?
+            if [ $ncl_ret -eq 124 ] && [ -e "$png" ] || [ $ncl_ret -eq 0 ]; then
+                ncl_ret=0
+            else
+                ncl_ret=1
+            fi
+        else
+            ncl -Q $s >/dev/null
+            ncl_ret=$?
+        fi
         if [[ $ncl_ret -ne 0 ]]; then
             dir_ncl_fail+=( $png )
+            continue
         fi
 
         cmp images/$png $png 2>/dev/null
